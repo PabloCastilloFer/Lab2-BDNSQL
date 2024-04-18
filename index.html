@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Stats Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        #chart svg, #stats svg {
+            display: inline-block;
+            vertical-align: top;
+            margin: 0 20px;
+        }
+
+        #chart svg {
+            margin-top: 50px; /* Ajusta el margen superior según sea necesario */
+        }
+
+        .bar {
+            fill: steelblue;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+
+        .axis text {
+            font-family: sans-serif;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pokémon Types Chart</h1>
+    <div id="chart">
+        <svg></svg>
+        <text x="300" y="20" text-anchor="middle" font-size="16" fill="black">Cantidad de tipos de Pokémon</text>
+    </div>
+    <div id="stats">
+        <svg></svg>
+        <text x="150" y="20" text-anchor="middle" font-size="16" fill="black">Promedio de peso y altura de los Pokémon</text>
+    </div>
+
+    <script>
+        // Función para cargar y representar los datos del segundo JSON
+        function drawStats() {
+            d3.json('average_stats.json').then(function(data) {
+                var width = 300;
+                var height = 200;
+                var margin = { top: 20, right: 20, bottom: 60, left: 60 };
+
+                var svg = d3.select("#stats svg")
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                            .append("g")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                var stats = Object.keys(data);
+                var values = Object.values(data);
+
+                var xScale = d3.scaleBand()
+                               .domain(stats)
+                               .range([0, width])
+                               .padding(0.1);
+
+                var yScale = d3.scaleLinear()
+                               .domain([0, d3.max(values)])
+                               .range([height, 0]);
+
+                svg.selectAll(".bar")
+                   .data(stats)
+                   .enter().append("rect")
+                   .attr("class", "bar")
+                   .attr("x", function(d) { return xScale(d); })
+                   .attr("y", function(d) { return yScale(data[d]); })
+                   .attr("width", xScale.bandwidth())
+                   .attr("height", function(d) { return height - yScale(data[d]); });
+
+                svg.append("g")
+                   .attr("class", "x axis")
+                   .attr("transform", "translate(0," + height + ")")
+                   .call(d3.axisBottom(xScale));
+
+                svg.append("g")
+                   .attr("class", "y axis")
+                   .call(d3.axisLeft(yScale).ticks(10));
+
+                svg.append("text")
+                   .attr("transform", "rotate(-90)")
+                   .attr("y", 0 - margin.left)
+                   .attr("x", 0 - (height / 2))
+                   .attr("dy", "1em")
+                   .style("text-anchor", "middle")
+                   .text("Promedio");
+
+                svg.append("text")
+                   .attr("x", width / 2)
+                   .attr("y", height + margin.top + 20)
+                   .style("text-anchor", "middle")
+                   .text("Stats");
+
+                // Add labels to y-axis at 10-interval
+                svg.selectAll(".yLabel")
+                   .data(yScale.ticks(10))
+                   .enter().append("text")
+                   .text(function(d) { return d; })
+                   .attr("x", -5)
+                   .attr("y", function(d) { return yScale(d); })
+                   .attr("dy", ".35em")
+                   .style("text-anchor", "end")
+                   .attr("class", "yLabel");
+            });
+        }
+
+        // Función para cargar y representar los datos del primer JSON
+        d3.json('types_count.json').then(function(data) {
+            var width = 600;
+            var height = 400;
+
+            var svg = d3.select("#chart svg")
+                        .attr("width", width)
+                        .attr("height", height);
+
+            var types = Object.keys(data);
+            var count = Object.values(data);
+
+            var xScale = d3.scaleBand()
+                           .domain(types)
+                           .range([0, width])
+                           .padding(0.1);
+
+            var yScale = d3.scaleLinear()
+                           .domain([0, d3.max(count)])
+                           .range([height, 0]);
+
+            svg.selectAll("rect")
+               .data(types)
+               .enter()
+               .append("rect")
+               .attr("x", function(d) { return xScale(d); })
+               .attr("y", function(d) { return yScale(data[d]); })
+               .attr("width", xScale.bandwidth())
+               .attr("height", function(d) { return height - yScale(data[d]); })
+               .attr("fill", "skyblue");
+
+            svg.selectAll("text")
+               .data(types)
+               .enter()
+               .append("text")
+               .text(function(d) { return d; })
+               .attr("x", function(d) { return xScale(d) + xScale.bandwidth() / 2; })
+               .attr("y", function(d) { return yScale(data[d]) - 5; })
+               .attr("text-anchor", "middle")
+               .attr("font-size", "12px")
+               .attr("fill", "black");
+
+            svg.append("g")
+               .attr("transform", "translate(0," + height + ")")
+               .call(d3.axisBottom(xScale));
+
+            svg.append("g")
+               .call(d3.axisLeft(yScale));
+
+            // Llama a la función para dibujar el segundo gráfico
+            drawStats();
+        });
+    </script>
+</body>
+</html>
